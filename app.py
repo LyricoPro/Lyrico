@@ -14,8 +14,8 @@ if "api_key" not in st.query_params:
 else:
     initial_api_key = st.query_params["api_key"]
 
-if "lyrics_result" not in st.session_state:
-    st.session_state.lyrics_result = None
+if "lyrics_history" not in st.session_state:
+    st.session_state.lyrics_history = []
 
 st.markdown("""
     <style>
@@ -62,7 +62,7 @@ with st.sidebar:
     st.markdown("---")
     
     entered_key = st.text_input(
-        "🔑 Groq API-Key (Wird im Browser gespeichert)", 
+        "🔑 Groq API-Key (Im Browser gespeichert)", 
         type="password", 
         value=initial_api_key,
         placeholder="gsk_..."
@@ -172,9 +172,10 @@ def generate_lyrics(is_reimagine=False):
                 "3. STRUKTUR: Zwingend sauber unterteilen in [Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro].\n"
             )
             
-            if is_reimagine and st.session_state.get("lyrics_result"):
+            if is_reimagine and st.session_state.lyrics_history:
+                current_latest = st.session_state.lyrics_history[-1]
                 user_content = (
-                    f"Hier ist der vorherige Song als Referenz:\n\n{st.session_state.lyrics_result}\n\n"
+                    f"Hier ist der vorherige Song als Referenz:\n\n{current_latest}\n\n"
                     f"AUFGABE (REIMAGINE): Erstelle einen komplett neuen, eigenständigen Take zu demselben Konzept ('{prompt_text}'). "
                     f"Schreibe völlig neue Bars, verändere die Reime und den Aufbau innerhalb der Zeilen, aber behalte exakt dieselbe Song-Struktur bei ([Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro])."
                 )
@@ -195,7 +196,13 @@ def generate_lyrics(is_reimagine=False):
                 temperature=creativity
             )
             
-            st.session_state.lyrics_result = response.choices[0].message.content
+            new_lyrics = response.choices[0].message.content
+            
+            if is_reimagine:
+                st.session_state.lyrics_history.append(new_lyrics)
+            else:
+                st.session_state.lyrics_history = [new_lyrics]
+                
             st.success("✅ Master-Lyrics erfolgreich generiert!")
             
         except Exception as e:
@@ -204,17 +211,29 @@ def generate_lyrics(is_reimagine=False):
 if st.button("🚀 Master-Lyrics aus DB generieren"):
     generate_lyrics(is_reimagine=False)
 
-if st.session_state.lyrics_result:
-    st.markdown("### 📜 Deine Lyrics:")
-    st.code(st.session_state.lyrics_result, language="markdown")
+if st.session_state.lyrics_history:
+    st.markdown("---")
+    st.markdown("### 🎛️ Song-Aktionen")
     
-    if st.button("✨ Reimagine (Komplett neuer Take, selbe Struktur)"):
-        generate_lyrics(is_reimagine=True)
-        st.rerun()
-        
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("✨ Reimagine (Neuer Take)"):
+            generate_lyrics(is_reimagine=True)
+            st.rerun()
+    with col_b:
+        can_reverse = len(st.session_state.lyrics_history) > 1
+        if st.button("⏪ Reverse (1 Schritt zurück)", disabled=not can_reverse):
+            if can_reverse:
+                st.session_state.lyrics_history.pop()
+                st.rerun()
+
+    st.markdown("### 📜 Deine Lyrics:")
+    st.code(st.session_state.lyrics_history[-1], language="markdown")
+    
+    # Download-Button ganz unten nach den Lyrics
     st.download_button(
-        label="💾 Als Textdatei speichern",
-        data=st.session_state.lyrics_result,
-        file_name=f"Lyrico_DB_{artist_style.replace(' ', '_')}_{language}.txt",
+        label="💾 Als .txt speichern",
+        data=st.session_state.lyrics_history[-1],
+        file_name=f"Lyrico_{artist_style.replace(' ', '_')}_{language}.txt",
         mime="text/plain"
     )
