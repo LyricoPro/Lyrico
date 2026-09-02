@@ -42,7 +42,8 @@ with st.sidebar:
     api_key_input = st.text_input(
         "🔑 Groq API-Key", 
         type="password", 
-        value="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"
+        value="",
+        placeholder="gsk_..."
     )
     
     st.markdown("### 🎛️ Master Control")
@@ -99,7 +100,6 @@ prompt_text = st.text_area(
     height=130
 )
 
-# Funktion zum Laden der echten lokalen Künstler-Datenbank aus einem Ordner namens "artist_db"
 def load_local_artist_database(artist_name):
     safe_filename = artist_name.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("101", "101")
     file_path = os.path.join("artist_db", f"{safe_filename}.txt")
@@ -113,7 +113,6 @@ def load_local_artist_database(artist_name):
             return f"Fehler beim Lesen der Datenbankdatei: {str(e)}"
     return f"[HINWEIS]: Keine lokale Textdatei unter '{file_path}' gefunden. Nutze internes Fallback-Profil."
 
-# Fallback-Profile (inkl. Lucio101)
 FALLBACK_PROFILES = {
     "Big L": "Harlem 90s East Coast Battle Rap. Komplexe Multisilbenreime, dunkler Humor, Harlem-Slang.",
     "Kendrick Lamar": "Compton Lyrical Visionary. Innere Zerrissenheit, non-lineare Jazz-Rhythmik, survivor's guilt.",
@@ -125,7 +124,7 @@ FALLBACK_PROFILES = {
 
 if st.button("🚀 Trainierte Master-Lyrics aus DB generieren"):
     if not api_key_input:
-        st.error("⚠️ Bitte gib deinen API-Key ein!")
+        st.error("⚠️ Bitte gib deinen API-Key in der Seitenleiste ein!")
     elif not prompt_text.strip():
         st.warning("⚠️ Bitte gib ein Thema oder Konzept ein!")
     else:
@@ -153,7 +152,7 @@ if st.button("🚀 Trainierte Master-Lyrics aus DB generieren"):
                     max_tokens = 8000
                 
                 response = client.chat.completions.create(
-                    model="openai/gpt-oss-120b",  # Aktives, funktionierendes Modell auf Groq
+                    model="openai/gpt-oss-120b",
                     messages=[
                         {"role": "system", "content": system_instruction},
                         {"role": "user", "content": f"Schreibe basierend auf der Künstler-Datenbank und dem Stil einen rohen, kompromisslos authentischen Rap-Text zu diesem Konzept: '{prompt_text}'. Ziel-Länge: ca. {length_words} Wörter."}
