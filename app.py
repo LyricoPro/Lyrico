@@ -9,8 +9,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-if "api_key" not in st.session_state:
-    st.session_state.api_key = ""
+# API-Key direkt im Browser über query_params speichern, damit er erhalten bleibt
+if "api_key" not in st.query_params:
+    initial_api_key = ""
+else:
+    initial_api_key = st.query_params["api_key"]
+
+if "lyrics_result" not in st.session_state:
+    st.session_state.lyrics_result = None
 
 st.markdown("""
     <style>
@@ -57,13 +63,16 @@ with st.sidebar:
     st.markdown("---")
     
     entered_key = st.text_input(
-        "🔑 Groq API-Key (Wird gespeichert)", 
+        "🔑 Groq API-Key (Bleibt im Browser gespeichert)", 
         type="password", 
-        value=st.session_state.api_key,
+        value=initial_api_key,
         placeholder="gsk_..."
     )
-    if entered_key:
-        st.session_state.api_key = entered_key
+    
+    if entered_key != initial_api_key:
+        st.query_params["api_key"] = entered_key
+        
+    active_key = entered_key if entered_key else initial_api_key
     
     st.markdown("### 🎛️ Master Control")
     
@@ -138,59 +147,79 @@ FALLBACK_PROFILES = {
     "Lucio101": "Berlin-Moabit Trap. Melodisch, cooler Vibe, Designer-Klamotten, Nachtleben, unaufgeregter aber treibender Flow."
 }
 
-if st.button("🚀 Master-Lyrics aus DB generieren"):
-    active_key = st.session_state.api_key
+def generate_lyrics(is_rethink=False):
     if not active_key:
         st.error("⚠️ Bitte gib deinen API-Key in der Seitenleiste ein!")
+        return
     elif not prompt_text.strip():
         st.warning("⚠️ Bitte gib ein Thema oder Konzept ein!")
-    else:
-        with st.spinner("🎧 Lyrico scannt deine Künstler-Datenbank und baut authentische Bars..."):
-            try:
-                client = Groq(api_key=active_key)
-                
-                db_content = load_local_artist_database(artist_style)
-                fallback_info = FALLBACK_PROFILES.get(artist_style, "Professioneller Rap-Interpret mit markantem Flow.")
-                
-                system_instruction = (
-                    f"Du bist ein professioneller Ghostwriter, spezialisiert auf den authentischen Stil von: **{artist_style}**.\n"
-                    f"HIER IST DIE ECHTE LOKALE TEXTBASIS / DATENBANK DES KÜNSTLERS (Nutze diesen Slang, Vokabular und Stil als strikte Hauptquelle):\n{db_content}\n\n"
-                    f"FALLBACK-PROFIL / STIL: {fallback_info}\n\n"
-                    f"SPRACHE: Der Song muss zu 100% auf **{language}** geschrieben sein.\n"
-                    f"GENRE / VIBE: '{genre}'.\n\n"
-                    "ABSOLUTE REGELN & STRIKTE VERBOTE:\n"
-                    "1. DATENBANK-TREUE: Orientiere dich primär an den echten Wörtern, Redewendungen und der Wortwahl aus der obigen Künstler-Datenbank. Erfinde keinen künstlichen, fremden Stil.\n"
-                    "2. ABSOLUTES WORTVERBOT: Verwende NIEMALS generische KI-Klischees oder Modewörter wie 'Neon', 'Neonlicht', 'Matrix', 'Schatten der Nacht', 'Labyrinth' oder geschmacklosen Kitsch. Wenn es nicht zu 100% authentisch nach dem echten Künstler klingt, ist es verboten.\n"
-                    "3. STRUKTUR: Zwingend sauber unterteilen in [Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro].\n"
+        return
+        
+    with st.spinner("🎧 Lyrico scannt deine Künstler-Datenbank und baut authentische Bars..."):
+        try:
+            client = Groq(api_key=active_key)
+            db_content = load_local_artist_database(artist_style)
+            fallback_info = FALLBACK_PROFILES.get(artist_style, "Professioneller Rap-Interpret mit markantem Flow.")
+            
+            system_instruction = (
+                f"Du bist ein professioneller Ghostwriter, spezialisiert auf den authentischen Stil von: **{artist_style}**.\n"
+                f"HIER IST DIE ECHTE LOKALE TEXTBASIS / DATENBANK DES KÜNSTLERS (Nutze diesen Slang, Vokabular und Stil als strikte Hauptquelle):\n{db_content}\n\n"
+                f"FALLBACK-PROFIL / STIL: {fallback_info}\n\n"
+                f"SPRACHE: Der Song muss zu 100% auf **{language}** geschrieben sein.\n"
+                f"GENRE / VIBE: '{genre}'.\n\n"
+                "ABSOLUTE REGELN & STRIKTE VERBOTE:\n"
+                "1. DATENBANK-TREUE: Orientiere dich primär an den echten Wörtern, Redewendungen und der Wortwahl aus der obigen Künstler-Datenbank. Erfinde keinen künstlichen, fremden Stil.\n"
+                "2. ABSOLUTES WORTVERBOT: Verwende NIEMALS generische KI-Klischees oder Modewörter wie 'Neon', 'Neonlicht', 'Matrix', 'Schatten der Nacht', 'Labyrinth' oder geschmacklosen Kitsch. Wenn es nicht zu 100% authentisch nach dem echten Künstler klingt, ist es verboten.\n"
+                "3. STRUKTUR: Zwingend sauber unterteilen in [Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro].\n"
+            )
+            
+            if is_rethink and st.session_state.get("lyrics_result"):
+                user_content = (
+                    f"Hier ist der vorher generierte Text als Entwurf:\n\n{st.session_state.lyrics_result}\n\n"
+                    f"AUFGABE (RETHINK): Verbessere diesen Text komplett. Optimiere die Reime, den Flow und die Punchlines, mache ihn noch roher und treffender. "
+                    f"Behalte aber exakt dieselbe Song-Struktur ([Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro]) bei! "
+                    f"Konzept / Thema bleibt: '{prompt_text}'."
                 )
-                
-                max_tokens = int(length_words * 1.4)
-                if max_tokens > 8000:
-                    max_tokens = 8000
-                
-                response = client.chat.completions.create(
-                    model="openai/gpt-oss-120b",
-                    messages=[
-                        {"role": "system", "content": system_instruction},
-                        {"role": "user", "content": f"Schreibe basierend auf der lokalen Datenbank einen absolut rohen, ungeskripteten und authentischen Rap-Text zu diesem Konzept: '{prompt_text}'. Ziel-Länge: ca. {length_words} Wörter."}
-                    ],
-                    max_tokens=max_tokens,
-                    temperature=creativity
-                )
-                
-                lyrics_result = response.choices[0].message.content
-                
-                st.success("✅ Master-Lyrics erfolgreich generiert!")
-                st.markdown("### 📜 Deine Lyrics:")
-                
-                st.code(lyrics_result, language="markdown")
-                
-                st.download_button(
-                    label="💾 Als Textdatei speichern",
-                    data=lyrics_result,
-                    file_name=f"Lyrico_DB_{artist_style.replace(' ', '_')}_{language}.txt",
-                    mime="text/plain"
-                )
-                
-            except Exception as e:
-                st.error(f"❌ Ein Fehler ist aufgetreten: {str(e)}")
+            else:
+                user_content = f"Schreibe basierend auf der lokalen Datenbank einen absolut rohen, ungeskripteten und authentischen Rap-Text zu diesem Konzept: '{prompt_text}'. Ziel-Länge: ca. {length_words} Wörter."
+
+            max_tokens = int(length_words * 1.4)
+            if max_tokens > 8000:
+                max_tokens = 8000
+            
+            response = client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": user_content}
+                ],
+                max_tokens=max_tokens,
+                temperature=creativity
+            )
+            
+            st.session_state.lyrics_result = response.choices[0].message.content
+            st.success("✅ Master-Lyrics erfolgreich generiert!")
+            
+        except Exception as e:
+            st.error(f"❌ Ein Fehler ist aufgetreten: {str(e)}")
+
+col1, col2 = st.columns([1, 1])
+with col1:
+    if st.button("🚀 Master-Lyrics aus DB generieren"):
+        generate_lyrics(is_rethink=False)
+
+with col2:
+    if st.session_state.lyrics_result:
+        if st.button("🔄 Rethink (Struktur behalten & verbessern)"):
+            generate_lyrics(is_rethink=True)
+
+if st.session_state.lyrics_result:
+    st.markdown("### 📜 Deine Lyrics:")
+    st.code(st.session_state.lyrics_result, language="markdown")
+    
+    st.download_button(
+        label="💾 Als Textdatei speichern",
+        data=st.session_state.lyrics_result,
+        file_name=f"Lyrico_DB_{artist_style.replace(' ', '_')}_{language}.txt",
+        mime="text/plain"
+    )
