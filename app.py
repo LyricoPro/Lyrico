@@ -3,11 +3,15 @@ import streamlit as st
 from groq import Groq
 
 st.set_page_config(
-    page_title="Lyrico Pro - Database Connected Ghostwriter",
+    page_title="Lyrico Pro",
     page_icon="🎤",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
+
+# Session State für dauerhafte API-Key-Speicherung initialisieren
+if "api_key" not in st.session_state:
+    st.session_state.api_key = ""
 
 st.markdown("""
     <style>
@@ -20,10 +24,11 @@ st.markdown("""
         background: linear-gradient(135deg, #ff4b4b, #ff8c00);
         color: white;
         font-weight: 700;
-        border-radius: 10px;
-        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
         border: none;
         box-shadow: 0 4px 14px rgba(255, 75, 75, 0.4);
+        font-size: 16px;
         transition: all 0.3s ease;
     }
     .stButton>button:hover {
@@ -31,20 +36,35 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(255, 75, 75, 0.6);
         transform: translateY(-1px);
     }
+    .stTextArea textarea {
+        background-color: #131b2e;
+        color: white;
+        border-radius: 10px;
+        font-size: 15px;
+    }
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 1rem;
+            padding-left: 0.8rem;
+            padding-right: 0.8rem;
+        }
+    }
     </style>
 """, unsafe_allow_html=True)
 
 with st.sidebar:
     st.markdown("## 🎤 **LYRICO PRO**")
-    st.markdown("Database-Connected Ghostwriting Engine")
+    st.markdown("Mobile Ghostwriting Engine")
     st.markdown("---")
     
-    api_key_input = st.text_input(
-        "🔑 Groq API-Key", 
+    entered_key = st.text_input(
+        "🔑 Groq API-Key (Wird gespeichert)", 
         type="password", 
-        value="",
+        value=st.session_state.api_key,
         placeholder="gsk_..."
     )
+    if entered_key:
+        st.session_state.api_key = entered_key
     
     st.markdown("### 🎛️ Master Control")
     
@@ -87,17 +107,14 @@ with st.sidebar:
         value=0.8,
         step=0.05
     )
-    
-    st.markdown("---")
-    st.markdown("🚀 **Engine:** `openai/gpt-oss-120b`")
 
-st.title("🎤 Lyrico Pro — Database Connected Ghostwriter")
-st.markdown("Schreibt Texte unter direkter Einbindung deiner lokalen Künstler-Datenbanken und harten Reim-Mustern.")
+st.title("🎤 Lyrico Pro")
+st.markdown("Mobile-optimierter Database Ghostwriter")
 
 prompt_text = st.text_area(
     "💡 Thema / Kerngedanke / Story-Konzept",
-    placeholder="z.B. 'Der schmale Grat zwischen Erfolg und Paranoia, falsche Freunde im Dunstkreis...'",
-    height=130
+    placeholder="z.B. 'Der schmale Grat zwischen Erfolg und Paranoia, falsche Freunde...'",
+    height=120
 )
 
 def load_local_artist_database(artist_name):
@@ -122,15 +139,16 @@ FALLBACK_PROFILES = {
     "Lucio101": "Berlin-Moabit Trap. Melodisch, cooler Vibe, Designer-Klamotten, Nachtleben, unaufgeregter aber treibender Flow."
 }
 
-if st.button("🚀 Trainierte Master-Lyrics aus DB generieren"):
-    if not api_key_input:
+if st.button("🚀 Master-Lyrics aus DB generieren"):
+    active_key = st.session_state.api_key
+    if not active_key:
         st.error("⚠️ Bitte gib deinen API-Key in der Seitenleiste ein!")
     elif not prompt_text.strip():
         st.warning("⚠️ Bitte gib ein Thema oder Konzept ein!")
     else:
-        with st.spinner("🎧 Lyrico scannt deine Künstler-Datenbank und schmiedet authentische Bars..."):
+        with st.spinner("🎧 Lyrico scannt deine Künstler-Datenbank und schmiedet Bars..."):
             try:
-                client = Groq(api_key=api_key_input)
+                client = Groq(api_key=active_key)
                 
                 db_content = load_local_artist_database(artist_style)
                 fallback_info = FALLBACK_PROFILES.get(artist_style, "Professioneller Rap-Interpret mit markantem Flow.")
@@ -163,13 +181,13 @@ if st.button("🚀 Trainierte Master-Lyrics aus DB generieren"):
                 
                 lyrics_result = response.choices[0].message.content
                 
-                st.success("✅ Master-Lyrics erfolgreich aus Datenbank generiert!")
-                st.markdown("### 📜 Deine Lyrics (Klicke oben rechts im Kasten zum Kopieren):")
+                st.success("✅ Master-Lyrics erfolgreich generiert!")
+                st.markdown("### 📜 Deine Lyrics:")
                 
                 st.code(lyrics_result, language="markdown")
                 
                 st.download_button(
-                    label="💾 Als Textdatei (.txt) herunterladen",
+                    label="💾 Als Textdatei speichern",
                     data=lyrics_result,
                     file_name=f"Lyrico_DB_{artist_style.replace(' ', '_')}_{language}.txt",
                     mime="text/plain"
