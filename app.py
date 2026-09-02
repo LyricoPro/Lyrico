@@ -9,7 +9,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# API-Key direkt im Browser über query_params speichern, damit er erhalten bleibt
 if "api_key" not in st.query_params:
     initial_api_key = ""
 else:
@@ -63,7 +62,7 @@ with st.sidebar:
     st.markdown("---")
     
     entered_key = st.text_input(
-        "🔑 Groq API-Key (Bleibt im Browser gespeichert)", 
+        "🔑 Groq API-Key (Wird im Browser gespeichert)", 
         type="password", 
         value=initial_api_key,
         placeholder="gsk_..."
@@ -147,7 +146,7 @@ FALLBACK_PROFILES = {
     "Lucio101": "Berlin-Moabit Trap. Melodisch, cooler Vibe, Designer-Klamotten, Nachtleben, unaufgeregter aber treibender Flow."
 }
 
-def generate_lyrics(is_rethink=False):
+def generate_lyrics(is_reimagine=False):
     if not active_key:
         st.error("⚠️ Bitte gib deinen API-Key in der Seitenleiste ein!")
         return
@@ -173,12 +172,11 @@ def generate_lyrics(is_rethink=False):
                 "3. STRUKTUR: Zwingend sauber unterteilen in [Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro].\n"
             )
             
-            if is_rethink and st.session_state.get("lyrics_result"):
+            if is_reimagine and st.session_state.get("lyrics_result"):
                 user_content = (
-                    f"Hier ist der vorher generierte Text als Entwurf:\n\n{st.session_state.lyrics_result}\n\n"
-                    f"AUFGABE (RETHINK): Verbessere diesen Text komplett. Optimiere die Reime, den Flow und die Punchlines, mache ihn noch roher und treffender. "
-                    f"Behalte aber exakt dieselbe Song-Struktur ([Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro]) bei! "
-                    f"Konzept / Thema bleibt: '{prompt_text}'."
+                    f"Hier ist der vorherige Song als Referenz:\n\n{st.session_state.lyrics_result}\n\n"
+                    f"AUFGABE (REIMAGINE): Erstelle einen komplett neuen, eigenständigen Take zu demselben Konzept ('{prompt_text}'). "
+                    f"Schreibe völlig neue Bars, verändere die Reime und den Aufbau innerhalb der Zeilen, aber behalte exakt dieselbe Song-Struktur bei ([Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro])."
                 )
             else:
                 user_content = f"Schreibe basierend auf der lokalen Datenbank einen absolut rohen, ungeskripteten und authentischen Rap-Text zu diesem Konzept: '{prompt_text}'. Ziel-Länge: ca. {length_words} Wörter."
@@ -203,20 +201,17 @@ def generate_lyrics(is_rethink=False):
         except Exception as e:
             st.error(f"❌ Ein Fehler ist aufgetreten: {str(e)}")
 
-col1, col2 = st.columns([1, 1])
-with col1:
-    if st.button("🚀 Master-Lyrics aus DB generieren"):
-        generate_lyrics(is_rethink=False)
-
-with col2:
-    if st.session_state.lyrics_result:
-        if st.button("🔄 Rethink (Struktur behalten & verbessern)"):
-            generate_lyrics(is_rethink=True)
+if st.button("🚀 Master-Lyrics aus DB generieren"):
+    generate_lyrics(is_reimagine=False)
 
 if st.session_state.lyrics_result:
     st.markdown("### 📜 Deine Lyrics:")
     st.code(st.session_state.lyrics_result, language="markdown")
     
+    if st.button("✨ Reimagine (Komplett neuer Take, selbe Struktur)"):
+        generate_lyrics(is_reimagine=True)
+        st.rerun()
+        
     st.download_button(
         label="💾 Als Textdatei speichern",
         data=st.session_state.lyrics_result,
