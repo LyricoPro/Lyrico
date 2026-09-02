@@ -9,7 +9,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Session State für dauerhafte API-Key-Speicherung initialisieren
 if "api_key" not in st.session_state:
     st.session_state.api_key = ""
 
@@ -125,7 +124,7 @@ def load_local_artist_database(artist_name):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-                return f"[GEFUNDENE LOKALE DATENBANK FÜR {artist_name.upper()}]:\n{content[:5000]}"
+                return f"[GEFUNDENE LOKALE DATENBANK FÜR {artist_name.upper()}]:\n{content[:6000]}"
         except Exception as e:
             return f"Fehler beim Lesen der Datenbankdatei: {str(e)}"
     return f"[HINWEIS]: Keine lokale Textdatei unter '{file_path}' gefunden. Nutze internes Fallback-Profil."
@@ -146,7 +145,7 @@ if st.button("🚀 Master-Lyrics aus DB generieren"):
     elif not prompt_text.strip():
         st.warning("⚠️ Bitte gib ein Thema oder Konzept ein!")
     else:
-        with st.spinner("🎧 Lyrico scannt deine Künstler-Datenbank und schmiedet Bars..."):
+        with st.spinner("🎧 Lyrico scannt deine Künstler-Datenbank und baut authentische Bars..."):
             try:
                 client = Groq(api_key=active_key)
                 
@@ -154,14 +153,14 @@ if st.button("🚀 Master-Lyrics aus DB generieren"):
                 fallback_info = FALLBACK_PROFILES.get(artist_style, "Professioneller Rap-Interpret mit markantem Flow.")
                 
                 system_instruction = (
-                    f"Du bist ein professioneller Ghostwriter, spezialisiert auf den Stil von: **{artist_style}**.\n"
-                    f"HIER IST DIE ECHTE LOKALE DATENBANK / TEXTBASIS DES KÜNSTLERS:\n{db_content}\n\n"
+                    f"Du bist ein professioneller Ghostwriter, spezialisiert auf den authentischen Stil von: **{artist_style}**.\n"
+                    f"HIER IST DIE ECHTE LOKALE TEXTBASIS / DATENBANK DES KÜNSTLERS (Nutze diesen Slang, Vokabular und Stil als strikte Hauptquelle):\n{db_content}\n\n"
                     f"FALLBACK-PROFIL / STIL: {fallback_info}\n\n"
                     f"SPRACHE: Der Song muss zu 100% auf **{language}** geschrieben sein.\n"
                     f"GENRE / VIBE: '{genre}'.\n\n"
-                    "ABSOLUTE REGELN:\n"
-                    "1. ANALYSIERE die obige Datenbank nach Vokabular, Satzbau und Reimtechnik des Künstlers und kopiere diesen Stil exakt.\n"
-                    "2. KEINE KI-Floskeln, kein Kitsch. Verwende echte Straßen- oder Tiefgang-Metaphern passend zum Künstler.\n"
+                    "ABSOLUTE REGELN & STRIKTE VERBOTE:\n"
+                    "1. DATENBANK-TREUE: Orientiere dich primär an den echten Wörtern, Redewendungen und der Wortwahl aus der obigen Künstler-Datenbank. Erfinde keinen künstlichen, fremden Stil.\n"
+                    "2. ABSOLUTES WORTVERBOT: Verwende NIEMALS generische KI-Klischees oder Modewörter wie 'Neon', 'Neonlicht', 'Matrix', 'Schatten der Nacht', 'Labyrinth' oder geschmacklosen Kitsch. Wenn es nicht zu 100% authentisch nach dem echten Künstler klingt, ist es verboten.\n"
                     "3. STRUKTUR: Zwingend sauber unterteilen in [Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro].\n"
                 )
                 
@@ -173,7 +172,7 @@ if st.button("🚀 Master-Lyrics aus DB generieren"):
                     model="openai/gpt-oss-120b",
                     messages=[
                         {"role": "system", "content": system_instruction},
-                        {"role": "user", "content": f"Schreibe basierend auf der Künstler-Datenbank und dem Stil einen rohen, kompromisslos authentischen Rap-Text zu diesem Konzept: '{prompt_text}'. Ziel-Länge: ca. {length_words} Wörter."}
+                        {"role": "user", "content": f"Schreibe basierend auf der lokalen Datenbank einen absolut rohen, ungeskripteten und authentischen Rap-Text zu diesem Konzept: '{prompt_text}'. Ziel-Länge: ca. {length_words} Wörter."}
                     ],
                     max_tokens=max_tokens,
                     temperature=creativity
