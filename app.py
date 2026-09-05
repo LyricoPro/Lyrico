@@ -1,16 +1,20 @@
 import os
 import streamlit as st
-from groq import Groq
+from openai import OpenAI
+
+BASE_DIR = r"C:\Users\moeha\Desktop\Lyrico Pro"
+DB_DIR = os.path.join(BASE_DIR, "artist_db")
+DEFAULT_API_KEY = ""
 
 st.set_page_config(
-    page_title="Lyrico Pro",
-    page_icon="🎤",
-    layout="wide",
+    page_title="Lyrico Pro - OpenRouter Studio",
+    page_icon="🎵",
+    layout="centered",
     initial_sidebar_state="collapsed"
 )
 
 if "api_key" not in st.query_params:
-    initial_api_key = ""
+    initial_api_key = DEFAULT_API_KEY
 else:
     initial_api_key = st.query_params["api_key"]
 
@@ -25,47 +29,43 @@ st.markdown("""
     }
     .stButton>button {
         width: 100%;
-        background: linear-gradient(135deg, #ff4b4b, #ff8c00);
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
         color: white;
         font-weight: 700;
         border-radius: 12px;
         padding: 0.85rem 1rem;
         border: none;
-        box-shadow: 0 4px 14px rgba(255, 75, 75, 0.4);
+        box-shadow: 0 4px 14px rgba(26, 115, 232, 0.4);
         font-size: 16px;
         transition: all 0.3s ease;
     }
     .stButton>button:hover {
-        background: linear-gradient(135deg, #ff3333, #ff7300);
-        box-shadow: 0 6px 20px rgba(255, 75, 75, 0.6);
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #1557b0, #3367d6);
+        box-shadow: 0 6px 20px rgba(26, 115, 232, 0.6);
+        transform: translateY(-2px);
     }
     .stTextArea textarea {
         background-color: #131b2e;
         color: white;
-        border-radius: 10px;
+        border-radius: 12px;
         font-size: 15px;
+        border: 1px solid rgba(66, 133, 244, 0.3);
     }
-    @media (max-width: 768px) {
-        .block-container {
-            padding-top: 1rem;
-            padding-left: 0.8rem;
-            padding-right: 0.8rem;
-        }
+    div[data-testid="stSidebar"] {
+        background-color: #070a12;
+        border-right: 1px solid rgba(66, 133, 244, 0.1);
     }
     </style>
 """, unsafe_allow_html=True)
 
 with st.sidebar:
-    st.markdown("## 🎤 **LYRICO PRO**")
-    st.markdown("Mobile Ghostwriting Engine")
-    st.markdown("---")
+    st.markdown("**🎛️ Lyrico Pro - OpenRouter Steuerung**")
     
     entered_key = st.text_input(
-        "🔑 Groq API-Key (Im Browser gespeichert)", 
+        "🔑 OpenRouter API-Key", 
         type="password", 
         value=initial_api_key,
-        placeholder="gsk_..."
+        placeholder="sk-or-v1-..."
     )
     
     if entered_key != initial_api_key:
@@ -73,167 +73,175 @@ with st.sidebar:
         
     active_key = entered_key if entered_key else initial_api_key
     
-    st.markdown("### 🎛️ Master Control")
-    
-    language = st.selectbox(
-        "🌐 Sprache",
-        ["Deutsch", "Englisch"]
-    )
-    
     artist_style = st.selectbox(
-        "🎤 Interpret & Signatur-Flow",
+        "🎤 Künstler & Stil-Profil",
         [
-            "Big L", "Kendrick Lamar", "J. Cole", "2Pac", "Eminem", 
-            "Kanye West", "Mac Miller", "Drake", "Travis Scott", "Nas",
-            "Haftbefehl", "Bushido (Classic 2000er)", "Bonez MC", "Apache 207", 
-            "Luciano", "Sido", "Haze", "Genetikk", "Nate 57", "Lucio101"
+            "Immortal Technique", "Big L", "Kendrick Lamar", "J. Cole", "2Pac", 
+            "Eminem", "Kanye West", "Mac Miller", "Drake", "Travis Scott", 
+            "Nas", "Haftbefehl", "Bushido (Classic 2000er)", "Bonez MC", 
+            "Apache 207", "Luciano", "Sido", "Haze", "Lucio101"
         ]
     )
     
     genre = st.selectbox(
-        "🎵 Beat-Vibe & Genre",
-        [
-            "Boom Bap (90s / True School)", "Modern Trap", "Dark Drill", 
-            "Conscious Storytelling", "Melancholic / Lo-Fi", "Westcoast Gangsta Rap", 
-            "Cloud Rap", "Afro Trap / Melodic", "Aggressive Street Rap (Harte Beats)"
-        ]
+        "🎵 Sub-Genre / Vibe",
+        ["Boom Bap / Klassik", "Modern Trap", "Drill", "Melodic Rap / Cloud", "Gangsta Rap / Hardcore", "Storytelling"]
+    )
+    
+    song_structure = st.selectbox(
+        "🧱 Song-Struktur",
+        ["Standard (Intro -> Verse -> Hook -> Verse -> Hook -> Outro)", "Extended (2 Verses + Bridge + Hook)", "Agressiv (Intro -> Double Verse -> Hook)"]
+    )
+    
+    rhyme_complexity = st.select_slider(
+        "🧬 Reimdichte & Reimtechnik",
+        options=["Einfach & Direkt", "Komplex & Mehrsilbig", "High-End Lyrik & Punchlines"],
+        value="Komplex & Mehrsilbig"
     )
     
     length_words = st.slider(
         "📝 Textlänge (Wörter)",
-        min_value=250,
-        max_value=2500,
-        value=850,
+        min_value=300,
+        max_value=1200,
+        value=600,
         step=50
     )
     
     creativity = st.slider(
         "✨ Kreativität (Temperatur)",
-        min_value=0.5,
+        min_value=0.0,
         max_value=1.0,
-        value=0.8,
+        value=0.75,
         step=0.05
     )
 
-st.title("🎤 Lyrico Pro")
-st.markdown("Mobile-optimierter Database Ghostwriter")
+st.markdown("""
+    <div style="display: flex; align-items: center; gap: 20px; padding: 25px 30px; background: linear-gradient(135deg, rgba(19, 27, 46, 0.9), rgba(11, 15, 25, 0.95)); border-radius: 18px; border: 1px solid rgba(66, 133, 244, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 25px;">
+        <div style="background: linear-gradient(135deg, #1a73e8, #4285f4); padding: 16px; border-radius: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(26, 115, 232, 0.5);">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+        </div>
+        <div>
+            <h1 style="margin: 0; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, #4285f4, #8ab4f8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LYRICO PRO - OPENROUTER EDITION</h1>
+            <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 14px;">Hochstabil über OpenRouter angebunden</p>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 prompt_text = st.text_area(
-    "💡 Thema / Kerngedanke / Story-Konzept",
-    placeholder="z.B. 'Der schmale Grat zwischen Erfolg und Paranoia, falsche Freunde...'",
-    height=120
+    "💡 Dein Prompt / Thema / Konzept",
+    placeholder="z.B. 'Ein harter Track über das Überleben auf der Straße, ehrliche Loyalität und den Druck des Erfolgs...'",
+    height=130
 )
 
-def load_local_artist_database(artist_name):
-    safe_filename = artist_name.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("101", "101")
-    file_path = os.path.join("artist_db", f"{safe_filename}.txt")
+with st.expander("🛠️ Zusätzliche Feinabstimmung (Optional)"):
+    adlibs = st.text_input("Ad-libs / Soundeffekte (z.B. Skrt, Brrr, Yeah)", placeholder="z.B. (Skrt, Skrt), [Ad-lib: Eh]")
+    language_style = st.selectbox("Sprachstil / Dialekt", ["Standard Deutsch", "Straßenslang / Authentisch", "Hochdeutsch & Metaphorisch", "Englisch / US-Rap"])
+
+def get_artist_filename(artist_name):
+    return artist_name.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("101", "101")
+
+def load_artist_db(artist_name):
+    safe_filename = get_artist_filename(artist_name)
+    os.makedirs(DB_DIR, exist_ok=True)
+    file_path = os.path.join(DB_DIR, f"{safe_filename}.txt")
     
     if os.path.exists(file_path):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-                return f"[GEFUNDENE LOKALE DATENBANK FÜR {artist_name.upper()}]:\n{content[:6000]}"
-        except Exception as e:
-            return f"Fehler beim Lesen der Datenbankdatei: {str(e)}"
-    return f"[HINWEIS]: Keine lokale Textdatei unter '{file_path}' gefunden. Nutze internes Fallback-Profil."
+                return f"[TRAINIERTE LOKALE DATENBANK FÜR {artist_name.upper()}]:\n{content[:15000]}"
+        except Exception:
+            pass
+    return f"[HINWEIS]: Keine lokale Trainingsdatei für {artist_name} gefunden. Nutze Standard-Stil."
 
-FALLBACK_PROFILES = {
-    "Big L": "Harlem 90s East Coast Battle Rap. Komplexe Multisilbenreime, dunkler Humor, Harlem-Slang.",
-    "Kendrick Lamar": "Compton Lyrical Visionary. Innere Zerrissenheit, non-lineare Jazz-Rhythmik, survivor's guilt.",
-    "Haftbefehl": "Offenbach Real Street Rap. Harte Konsonanten, offenbacher Straßenslang, Paranoia, Luxus, Kriminalität.",
-    "Bushido (Classic 2000er)": "Legendäre Berliner Gangsta-Rap-Ära. Eiskalte Berliner Straße, minimalistische Härte.",
-    "Sido": "Berliner Schule. Rotzig, selbstironisch, zynischer Humor, genial erzählte Geschichten.",
-    "Lucio101": "Berlin-Moabit Trap. Melodisch, cooler Vibe, Designer-Klamotten, Nachtleben, unaufgeregter aber treibender Flow."
-}
+def save_to_artist_db(artist_name, text_to_save):
+    safe_filename = get_artist_filename(artist_name)
+    os.makedirs(DB_DIR, exist_ok=True)
+    file_path = os.path.join(DB_DIR, f"{safe_filename}.txt")
+    try:
+        with open(file_path, "a", encoding="utf-8") as f:
+            f.write(f"\n\n--- TRAINIERTER TAKE ({artist_name}) ---\n{text_to_save}")
+        return True
+    except Exception:
+        return False
 
-def generate_lyrics(is_reimagine=False):
+def generate_lyrics():
     if not active_key:
-        st.error("⚠️ Bitte gib deinen API-Key in der Seitenleiste ein!")
+        st.error("⚠️ Bitte gib deinen OpenRouter API-Key in der Seitenleiste ein!")
         return
     elif not prompt_text.strip():
-        st.warning("⚠️ Bitte gib ein Thema oder Konzept ein!")
+        st.warning("⚠️ Bitte gib ein Thema oder Prompt ein!")
         return
         
-    with st.spinner("🎧 Lyrico scannt deine Künstler-Datenbank und baut authentische Bars..."):
+    with st.spinner(f"🎧 Gemini generiert über OpenRouter den kompletten Song im Stil von {artist_style}..."):
         try:
-            client = Groq(api_key=active_key)
-            db_content = load_local_artist_database(artist_style)
-            fallback_info = FALLBACK_PROFILES.get(artist_style, "Professioneller Rap-Interpret mit markantem Flow.")
+            client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=active_key,
+            )
+            db_content = load_artist_db(artist_style)
             
             system_instruction = (
-                f"Du bist ein professioneller Ghostwriter, spezialisiert auf den authentischen Stil von: **{artist_style}**.\n"
-                f"HIER IST DIE ECHTE LOKALE TEXTBASIS / DATENBANK DES KÜNSTLERS (Nutze diesen Slang, Vokabular und Stil als strikte Hauptquelle):\n{db_content}\n\n"
-                f"FALLBACK-PROFIL / STIL: {fallback_info}\n\n"
-                f"SPRACHE: Der Song muss zu 100% auf **{language}** geschrieben sein.\n"
-                f"GENRE / VIBE: '{genre}'.\n\n"
-                "ABSOLUTE REGELN & STRIKTE VERBOTE:\n"
-                "1. DATENBANK-TREUE: Orientiere dich primär an den echten Wörtern, Redewendungen und der Wortwahl aus der obigen Künstler-Datenbank. Erfinde keinen künstlichen, fremden Stil.\n"
-                "2. ABSOLUTES WORTVERBOT: Verwende NIEMALS generische KI-Klischees oder Modewörter wie 'Neon', 'Neonlicht', 'Matrix', 'Schatten der Nacht', 'Labyrinth' oder geschmacklosen Kitsch. Wenn es nicht zu 100% authentisch nach dem echten Künstler klingt, ist es verboten.\n"
-                "3. STRUKTUR: Zwingend sauber unterteilen in [Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro].\n"
+                f"Du bist ein Elite-Ghostwriter für den Künstler **{artist_style}**.\n"
+                f"LOKALE KÜNSTLER-DATENBANK & TRAININGS-DATEN:\n{db_content}\n\n"
+                f"PARAMETRIERUNG:\n"
+                f"- Sub-Genre: {genre}\n"
+                f"- Song-Struktur: {song_structure}\n"
+                f"- Reimtechnik: {rhyme_complexity}\n"
+                f"- Sprachstil: {language_style}\n"
+                f"- Ad-libs Einbindung: {adlibs if adlibs else 'Standard'}\n\n"
+                "WICHTIGE REGELN:\n"
+                "1. Schreibe den SONG KOMPLETT von Anfang bis Ende aus (Intro, Verses, Hooks, Bridge, Outro). Breche NIEMALS mitten im Text ab.\n"
+                "2. Keine KI-Floskeln oder Moralpredigten. Nutze den rohen Vibe, Slang und Wortschatz des Künstlers.\n"
+                "3. Achte auf harte Reime und authentischen Sprachgebrauch."
             )
             
-            if is_reimagine and st.session_state.lyrics_history:
-                current_latest = st.session_state.lyrics_history[-1]
-                user_content = (
-                    f"Hier ist der vorherige Song als Referenz:\n\n{current_latest}\n\n"
-                    f"AUFGABE (REIMAGINE): Erstelle einen komplett neuen, eigenständigen Take zu demselben Konzept ('{prompt_text}'). "
-                    f"Schreibe völlig neue Bars, verändere die Reime und den Aufbau innerhalb der Zeilen, aber behalte exakt dieselbe Song-Struktur bei ([Intro], [Part 1], [Hook / Refrain], [Part 2], [Bridge], [Outro])."
-                )
-            else:
-                user_content = f"Schreibe basierend auf der lokalen Datenbank einen absolut rohen, ungeskripteten und authentischen Rap-Text zu diesem Konzept: '{prompt_text}'. Ziel-Länge: ca. {length_words} Wörter."
+            user_content = f"Schreibe einen vollständigen Track zum Konzept: '{prompt_text}'. Ziel-Länge: ca. {length_words} Wörter."
 
-            max_tokens = int(length_words * 1.4)
-            if max_tokens > 8000:
-                max_tokens = 8000
-            
             response = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
+                model="~google/gemini-flash-latest",
                 messages=[
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": user_content}
                 ],
-                max_tokens=max_tokens,
-                temperature=creativity
+                temperature=creativity,
+                max_tokens=4096
             )
             
-            new_lyrics = response.choices[0].message.content
-            
-            if is_reimagine:
-                st.session_state.lyrics_history.append(new_lyrics)
+            result_text = response.choices[0].message.content
+            if result_text and len(result_text.strip()) > 50:
+                st.session_state.lyrics_history = [result_text]
+                st.success("✅ Song vollständig über OpenRouter generiert!")
             else:
-                st.session_state.lyrics_history = [new_lyrics]
-                
-            st.success("✅ Master-Lyrics erfolgreich generiert!")
+                st.error("⚠️ Die Antwort war leer oder unvollständig.")
             
         except Exception as e:
-            st.error(f"❌ Ein Fehler ist aufgetreten: {str(e)}")
+            st.error(f"❌ Fehler: {str(e)}")
 
-if st.button("🚀 Master-Lyrics aus DB generieren"):
-    generate_lyrics(is_reimagine=False)
+if st.button("🚀 Vollständigen Song über OpenRouter generieren"):
+    generate_lyrics()
 
 if st.session_state.lyrics_history:
     st.markdown("---")
-    st.markdown("### 🎛️ Song-Aktionen")
+    st.markdown("**📜 Generierter Text, Training & Feedback**")
     
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("✨ Reimagine (Neuer Take)"):
-            generate_lyrics(is_reimagine=True)
-            st.rerun()
-    with col_b:
-        can_reverse = len(st.session_state.lyrics_history) > 1
-        if st.button("⏪ Reverse (1 Schritt zurück)", disabled=not can_reverse):
-            if can_reverse:
-                st.session_state.lyrics_history.pop()
-                st.rerun()
-
-    st.markdown("### 📜 Deine Lyrics:")
     st.code(st.session_state.lyrics_history[-1], language="markdown")
     
-    # Download-Button ganz unten nach den Lyrics
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("👍 Thumbs Up (In lokale DB speichern & trainieren)"):
+            success = save_to_artist_db(artist_style, st.session_state.lyrics_history[-1])
+            if success:
+                st.success(f"✅ Erfolgreich in **{DB_DIR}** gespeichert & für {artist_style} trainiert!")
+            else:
+                st.error("Fehler beim Speichern der Datei.")
+    with col2:
+        if st.button("👎 Thumbs Down (Feedback erfassen)"):
+            st.warning("⚠️ Feedback registriert. Passe die Parameter oder den Prompt für den nächsten Take an.")
+
     st.download_button(
-        label="💾 Als .txt speichern",
+        label="💾 Als .txt herunterladen",
         data=st.session_state.lyrics_history[-1],
-        file_name=f"Lyrico_{artist_style.replace(' ', '_')}_{language}.txt",
+        file_name=f"Lyrico_Pro_OpenRouter_{artist_style.replace(' ', '_')}.txt",
         mime="text/plain"
     )
