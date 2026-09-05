@@ -121,7 +121,7 @@ st.markdown("""
             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
         </div>
         <div>
-            <h1 style="margin: 0; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, #4285f4, #8ab4f8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LYRICO PRO - OPENROUTER EDITION</h1>
+            <h1 style="margin: 0; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, #4285f4, #8ab4f8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LYRICO PRO - STUDIOS</h1>
             <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 14px;">Stabiler Kostenloser Ghostwriter</p>
         </div>
     </div>
