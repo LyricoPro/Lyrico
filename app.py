@@ -4,19 +4,15 @@ from openai import OpenAI
 
 BASE_DIR = r"C:\Users\moeha\Desktop\Lyrico Pro"
 DB_DIR = os.path.join(BASE_DIR, "artist_db")
-DEFAULT_API_KEY = ""
+
+ACTIVE_API_KEY = st.secrets.get("OPENROUTER_API_KEY", "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")
 
 st.set_page_config(
-    page_title="Lyrico Pro - OpenRouter Studio",
+    page_title="Lyrico Pro - Community Edition",
     page_icon="🎵",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
-
-if "api_key" not in st.query_params:
-    initial_api_key = DEFAULT_API_KEY
-else:
-    initial_api_key = st.query_params["api_key"]
 
 if "lyrics_history" not in st.session_state:
     st.session_state.lyrics_history = []
@@ -59,19 +55,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 with st.sidebar:
-    st.markdown("**🎛️ Lyrico Pro - OpenRouter Steuerung**")
-    
-    entered_key = st.text_input(
-        "🔑 OpenRouter API-Key", 
-        type="password", 
-        value=initial_api_key,
-        placeholder="sk-or-v1-..."
-    )
-    
-    if entered_key != initial_api_key:
-        st.query_params["api_key"] = entered_key
-        
-    active_key = entered_key if entered_key else initial_api_key
+    st.markdown("**🎛️ Lyrico Pro - Community Studio**")
+    st.info("💡 100% kostenloser Community-Modus. Jeder kann Songs erstellen ohne eigenen Key!")
     
     artist_style = st.selectbox(
         "🎤 Künstler & Stil-Profil",
@@ -121,8 +106,8 @@ st.markdown("""
             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
         </div>
         <div>
-            <h1 style="margin: 0; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, #4285f4, #8ab4f8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LYRICO PRO - OPENROUTER EDITION</h1>
-            <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 14px;">Hochstabil über OpenRouter angebunden</p>
+            <h1 style="margin: 0; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, #4285f4, #8ab4f8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LYRICO PRO - COMMUNITY EDITION</h1>
+            <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 14px;">Kostenlos & unkompliziert für deine Insta-Story</p>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -166,18 +151,18 @@ def save_to_artist_db(artist_name, text_to_save):
         return False
 
 def generate_lyrics():
-    if not active_key:
-        st.error("⚠️ Bitte gib deinen OpenRouter API-Key in der Seitenleiste ein!")
+    if not ACTIVE_API_KEY:
+        st.error("⚠️ Kein API-Key hinterlegt! Bitte trage den OPENROUTER_API_KEY in den Streamlit Secrets ein.")
         return
     elif not prompt_text.strip():
         st.warning("⚠️ Bitte gib ein Thema oder Prompt ein!")
         return
         
-    with st.spinner(f"🎧 Gemini generiert über OpenRouter den kompletten Song im Stil von {artist_style}..."):
+    with st.spinner(f"🎧 Die Community-KI generiert den Song im Stil von {artist_style}..."):
         try:
             client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
-                api_key=active_key,
+                api_key=ACTIVE_API_KEY,
             )
             db_content = load_artist_db(artist_style)
             
@@ -199,7 +184,7 @@ def generate_lyrics():
             user_content = f"Schreibe einen vollständigen Track zum Konzept: '{prompt_text}'. Ziel-Länge: ca. {length_words} Wörter."
 
             response = client.chat.completions.create(
-                model="~google/gemini-flash-latest",
+                model="openrouter/free", # Nutzt den automatischen Free-Modell-Router von OpenRouter (0,00 € Kosten)
                 messages=[
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": user_content}
@@ -211,14 +196,14 @@ def generate_lyrics():
             result_text = response.choices[0].message.content
             if result_text and len(result_text.strip()) > 50:
                 st.session_state.lyrics_history = [result_text]
-                st.success("✅ Song vollständig über OpenRouter generiert!")
+                st.success("✅ Song vollständig generiert!")
             else:
                 st.error("⚠️ Die Antwort war leer oder unvollständig.")
             
         except Exception as e:
-            st.error(f"❌ Fehler: {str(e)}")
+            st.error(f"❌ Fehler (möglicherweise Auslastung im Free-Modell): {str(e)}")
 
-if st.button("🚀 Vollständigen Song über OpenRouter generieren"):
+if st.button("🚀 Vollständigen Song generieren"):
     generate_lyrics()
 
 if st.session_state.lyrics_history:
@@ -242,6 +227,6 @@ if st.session_state.lyrics_history:
     st.download_button(
         label="💾 Als .txt herunterladen",
         data=st.session_state.lyrics_history[-1],
-        file_name=f"Lyrico_Pro_OpenRouter_{artist_style.replace(' ', '_')}.txt",
+        file_name=f"Lyrico_Pro_Free_{artist_style.replace(' ', '_')}.txt",
         mime="text/plain"
     )
