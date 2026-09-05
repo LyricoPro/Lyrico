@@ -107,7 +107,7 @@ st.markdown("""
         </div>
         <div>
             <h1 style="margin: 0; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, #4285f4, #8ab4f8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">LYRICO PRO - COMMUNITY EDITION</h1>
-            <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 14px;">Kostenlos & unkompliziert für deine Insta-Story</p>
+            <p style="margin: 4px 0 0 0; color: #9ca3af; font-size: 14px;">Kostenlos & unkompliziert</p>
         </div>
     </div>
 """, unsafe_allow_html=True)
